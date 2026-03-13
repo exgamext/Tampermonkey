@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         IGG Games — Modern UI v21
+// @name         IGG Games — Modern UI v22
 // @namespace    https://igg-games.com/
-// @version      21.0
+// @version      22.0
 // @description  Redesign premium para igg-games.com
 // @author       You
 // @updateURL    http://github.com/exgamext/Tampermonkey/raw/refs/heads/main/IGG Games - Modern UI.user.js
@@ -112,7 +112,7 @@
     .hcard-img { width: 100%; aspect-ratio: 1/1; overflow: hidden; flex-shrink: 0; background: var(--surf); }
     .hcard-img img { width: 100%; height: 100%; object-fit: cover; display: block;
       transition: transform .45s var(--ease); }
-    .hcard:hover .hcard-img img { transform: scale(1.07); }
+    .hcard:hover .hcard-img img { transform: none; }
 
     /* spotlight — follows cursor */
     .hcard-spot {
@@ -327,8 +327,8 @@
 
     /* main image area */
     #igg-lb-stage { position:relative; display:flex; align-items:center; justify-content:center;
-      flex:1; width:100%; min-height:0; padding:48px 64px 12px; box-sizing:border-box; }
-    #igg-lb-img { max-width:100%; max-height:100%; border-radius:var(--r);
+      flex:1; width:100%; min-height:0; padding:52px 14px 8px; box-sizing:border-box; }
+    #igg-lb-img { max-width:100%; max-height:100%; width:100%; border-radius:var(--r);
       object-fit:contain; display:block; transition:opacity .18s; }
     #igg-lb-img.fade { opacity:0; }
 
@@ -422,7 +422,7 @@
         </div>
         <span class="nl-text">IGG<em>GAMES</em></span>
       </a>
-      <div class="n-title">IGG Modern UI &nbsp;<em>V21</em></div>
+      <div class="n-title">IGG Modern UI &nbsp;<em>V22</em></div>
       <div class="ns">
         <svg class="ns-ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">${SVG.search}</svg>
         <input id="igg-search" type="text" placeholder="Buscar jogo..." autocomplete="off"
