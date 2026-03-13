@@ -4,6 +4,8 @@
 // @version      21.0
 // @description  Redesign premium para igg-games.com
 // @author       You
+// @updateURL    http://github.com/exgamext/Tampermonkey/raw/refs/heads/main/IGG Games - Modern UI.user.js
+// @downloadURL  http://github.com/exgamext/Tampermonkey/raw/refs/heads/main/IGG Games - Modern UI.user.js
 // @match        https://igg-games.com/
 // @match        https://igg-games.com/?*
 // @match        https://igg-games.com/page/*
@@ -17,7 +19,7 @@
 
   /* ── FastComments interceptor ──
      IGG calls window.FastCommentsUI(el, config) from an inline script.
-     We proxy it: capture the config, suppress the original call,
+     We proxy it: capture the config, suppress the original call, 
      then re-call with our container + dark theme once our UI is built.
   */
   let _fcConfig = null;
