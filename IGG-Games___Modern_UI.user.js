@@ -1,11 +1,11 @@
 // ==UserScript==
-// @name         IGG Games — Modern UI v22
+// @name         IGG Games — Modern UI v23
 // @namespace    https://igg-games.com/
-// @version      22.0
+// @version      23.0
 // @description  Redesign premium para igg-games.com
 // @author       You
-// @updateURL    http://github.com/exgamext/Tampermonkey/raw/refs/heads/main/IGG Games - Modern UI.user.js
-// @downloadURL  http://github.com/exgamext/Tampermonkey/raw/refs/heads/main/IGG Games - Modern UI.user.js
+// @updateURL    https://github.com/exgamext/Tampermonkey/raw/refs/heads/main/IGG-Games___Modern_UI.user.js
+// @downloadURL  https://github.com/exgamext/Tampermonkey/raw/refs/heads/main/IGG-Games___Modern_UI.user.js
 // @match        https://igg-games.com/
 // @match        https://igg-games.com/?*
 // @match        https://igg-games.com/page/*
@@ -422,7 +422,7 @@
         </div>
         <span class="nl-text">IGG<em>GAMES</em></span>
       </a>
-      <div class="n-title">IGG Modern UI &nbsp;<em>V22</em></div>
+      <div class="n-title">IGG Modern UI &nbsp;<em>V23</em></div>
       <div class="ns">
         <svg class="ns-ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">${SVG.search}</svg>
         <input id="igg-search" type="text" placeholder="Buscar jogo..." autocomplete="off"
@@ -503,6 +503,40 @@
   function buildHome() {
     const articles = [...document.querySelectorAll('article')];
     const searchQ  = IS_SEARCH ? decodeURIComponent((QUERY.match(/[?&]s=([^&]*)/) || ['',''])[1]).replace(/\+/g,' ') : '';
+
+    /* ── Cloudflare challenge detection ── */
+    const isCF = (
+      document.querySelector('#cf-wrapper, #challenge-form, .cf-browser-verification, [data-cf-settings]') ||
+      /just a moment|checking your browser|enable javascript/i.test(document.title) ||
+      (IS_SEARCH && articles.length === 0 && document.querySelector('form[action*="cdn-cgi"]'))
+    );
+    if (isCF) {
+      const page = document.createElement('div');
+      page.className = 'igg-page';
+      page.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:340px;gap:18px;text-align:center;padding:40px 20px;">
+          <div style="font-size:40px;">🛡️</div>
+          <div style="font-size:18px;font-weight:800;color:var(--white);">Verificação Cloudflare</div>
+          <div style="font-size:13.5px;color:var(--muted);max-width:380px;line-height:1.7;">
+            O site está verificando se você é humano. Complete a verificação e a pesquisa continuará automaticamente.
+          </div>
+          <button onclick="location.reload()" style="background:var(--acc);color:#fff;border:none;border-radius:var(--rs);padding:11px 26px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--f);">
+            Tentar Novamente
+          </button>
+        </div>
+      `;
+      ROOT.appendChild(page);
+      /* Watch for CF to resolve — when articles appear, rebuild */
+      const cfObs = new MutationObserver(() => {
+        if (document.querySelector('article')) {
+          cfObs.disconnect();
+          ROOT.innerHTML = '';
+          buildHome();
+        }
+      });
+      cfObs.observe(document.body, { childList: true, subtree: true });
+      return;
+    }
 
     const games = articles.map(art => {
       const titleA = art.querySelector('h2 a[href], h3 a[href]');
@@ -783,12 +817,16 @@
           const a = para.querySelector('a[href]');
           if (a && !TORRENT) TORRENT = { label: host, href: a.href };
         } else if (/megaup/i.test(host)) {
-          // Parse all parts (including uploading ones)
           const parts = parseParts(para);
-          // Also check next sibling paragraph if it has no new Link header
-          const nx = para.nextElementSibling;
-          if (nx && !nx.querySelector('strong,b')) {
-            parseParts(nx).forEach(p => parts.push(p));
+          // Check up to 3 next siblings for continuation (no new Link header)
+          let sib = para.nextElementSibling;
+          let sibCount = 0;
+          while (sib && sibCount < 3) {
+            const sibStrong = sib.querySelector('strong,b');
+            if (sibStrong && /^link\s+/i.test(sibStrong.textContent)) break;
+            parseParts(sib).forEach(p => parts.push(p));
+            sib = sib.nextElementSibling;
+            sibCount++;
           }
           if (!MEGAUP && parts.length) MEGAUP = { parts };
           else if (!MEGAUP && /uploading/i.test(para.textContent)) MEGAUP = { parts:[{label:'Uploading',href:null}] };
@@ -807,23 +845,24 @@
         if (!/UPDATE\s+v[\d.]+/i.test(txt)) return;
         const ver = (txt.match(/UPDATE\s+(v[\d.]+)/i)||['','Update'])[1];
 
-        // Collect candidate paragraphs: the update <p> itself + up to 2 next siblings
-        // (in case links are on separate line(s))
+        // Collect candidate paragraphs: the update <p> itself + up to 3 next siblings
         const candidates = [p];
-        for (let i = 1; i <= 2; i++) {
+        for (let i = 1; i <= 3; i++) {
           const sib = allParas[idx + i];
           if (!sib) break;
           const sibTxt = sib.textContent.trim();
-          // Stop if the next sibling is another UPDATE line or a new "Link X:" block
           if (/UPDATE\s+v[\d.]+/i.test(sibTxt)) break;
           if (/^link\s+/i.test(sib.querySelector('strong,b')?.textContent || '')) break;
           candidates.push(sib);
         }
 
         // Find MegaUp link across all candidate paragraphs
+        // Match by href (most reliable) OR text content
         let megaLink = null;
         for (const cand of candidates) {
-          const found = [...cand.querySelectorAll('a[href]')].find(a => /megaup/i.test(a.textContent.trim()));
+          const found = [...cand.querySelectorAll('a[href]')].find(a =>
+            /megaup/i.test(a.href) || /megaup/i.test(a.textContent.trim())
+          );
           if (found) { megaLink = { label: 'MegaUp', href: found.href }; break; }
         }
         UPDATES.push({ ver, megaLink });
